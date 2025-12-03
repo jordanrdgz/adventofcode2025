@@ -13,7 +13,7 @@
   [id-str]
   (let [total-digits (count id-str)]
     (filter
-      #(= (mod total-digits %) 0)
+      #(zero? (mod total-digits %))
       (range 1 total-digits))))
 
 (defn get-seq-frequencies
