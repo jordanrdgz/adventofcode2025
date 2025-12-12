@@ -22,7 +22,7 @@
     (count
       (loop [conn-to-process (:you rack)
              added-conn 0]
-        ;(println conn-to-process)
+        (println conn-to-process)
         ;(println (filter #(not= % "out") conn-to-process))
         (if (empty? (filter #(not= % "out") conn-to-process))
           conn-to-process
@@ -33,27 +33,29 @@
             ;(Thread/sleep 2000)
             (recur (flatten next-conn) added-conn)))))))
 
-; Not working yet
+(defn make-count-paths-fn [rack]
+  (let [memo (atom {})
+        count-paths (fn count-paths [start end]
+                      (if-let [cached (@memo [start end])]
+                        cached
+                        (let [result (if (= start end)
+                                       1
+                                       (let [connections (get rack (keyword start) [])]
+                                         (reduce + (map #(count-paths % end) connections))))]
+                          (swap! memo assoc [start end] result)
+                          result)))]
+    count-paths))
+
 (defn rack-connections-2
   []
-  (let [rack (get-rack-data)]
-    (clojure.pprint/pprint rack)
-    (let [paths (loop [conn-to-process (:svr rack)
-                       paths [conn-to-process]]
-                  (println paths)
-                  ;(println (filter #(not= % "out") conn-to-process))
-                  (if (empty? (filter #(not= % "fft") conn-to-process))
-                    paths
-                    (let [next-conn (for [ctp conn-to-process]
-                                      (if (not= ctp "fft")
-                                        (get rack (keyword ctp))
-                                        ctp))
-                          flat-conns (flatten next-conn)
-                          new-paths (conj paths flat-conns)]
-                      (Thread/sleep 2000)
-                      (recur flat-conns new-paths))))
-          ;max-length (apply max (map count paths))
-          ;padded-paths (mapv #(vec (take max-length (concat % (repeat "")))) paths)
-          ;the-real-paths (apply map vector padded-paths)
-          ]
-      paths)))
+  (let [rack (get-rack-data)
+        ;(clojure.pprint/pprint rack)
+        count-paths-memo (make-count-paths-fn rack)
+        paths_svr_fft (count-paths-memo "svr" "fft")
+        ;_ (println paths_svr_fft)
+        paths_fft_dac (count-paths-memo "fft" "dac")
+        ;_ (println paths_fft_dac)
+        paths_dac_out (count-paths-memo "dac" "out")
+        ;_ (println paths_dac_out)
+        ]
+    (apply * [paths_svr_fft paths_fft_dac paths_dac_out])))
