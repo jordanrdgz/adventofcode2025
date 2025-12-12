@@ -29,6 +29,6 @@
                              numbers (map #(Integer/parseInt %) (str/split numbers-str #" "))]
                          (vec (cons [width height] [numbers]))))
                      (last input))
-        _ (println regions)
+        ;_ (println regions)
         total-fits (map #(calculate-fits % presents) regions)]
     (apply + total-fits)))
